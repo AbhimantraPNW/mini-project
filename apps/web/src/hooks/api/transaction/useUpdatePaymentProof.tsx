@@ -32,7 +32,7 @@ const useUpdatePaymentProof = () => {
         });
       }
 
-      await axiosInstance.patch<Transaction>(
+      const response = await axiosInstance.patch<Transaction>(
         `/transactions/${transactionId}`,
         updatePaymentProofForm,
       );
@@ -42,7 +42,9 @@ const useUpdatePaymentProof = () => {
         description: "Please waiting for this moment.",
       });
 
-      router.push("/");
+      router.push(
+        `/`,
+      );
     } catch (error) {
       if (error instanceof AxiosError) {
         console.log(error.response?.data);

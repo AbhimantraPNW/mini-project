@@ -1,11 +1,11 @@
 import { createEventService } from "@/services/event/create-event.service";
-import { getBlogService } from "@/services/event/get-event.service";
+import { getEventService } from "@/services/event/get-event.service";
 import { getEventsService } from "@/services/event/get-events.service";
 import { getEventsByOrganizerService } from "@/services/event/get-eventsByOrganizer.service";
 import { NextFunction, Request, Response } from "express";
 
 export class EventController {
-  async createEventController(req: Request, res: Response) {
+  async createEventController(req: Request, res: Response, next: NextFunction) {
     try {
       const files = req.files as Express.Multer.File[];
 
@@ -17,14 +17,14 @@ export class EventController {
 
       return res.status(200).send(result);
     } catch (error) {
-      throw error;
+      next(error)
     }
   }
 
   async getEventController(req: Request, res: Response) {
     try {
       const id = req.params.id;
-      const result = await getBlogService(Number(id));
+      const result = await getEventService(Number(id));
 
       return res.status(200).send(result);
     } catch (error) {

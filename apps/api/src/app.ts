@@ -13,6 +13,7 @@ import { SampleRouter } from "./routers/sample.router";
 import { AuthRouter } from "./routers/auth.router";
 import { EventRouter } from "./routers/event.router";
 import { TransactionRouter } from "./routers/transaction.router";
+import { ReviewRouter } from "./routers/review.router";
 import { join } from "path";
 
 export default class App {
@@ -61,6 +62,7 @@ export default class App {
     const authRouter = new AuthRouter();
     const eventRouter = new EventRouter();
     const transactionRouter = new TransactionRouter();
+    const reviewRouter = new ReviewRouter();
 
     this.app.get("/api", (req: Request, res: Response) => {
       res.send(`Hello, Welcome to Blog API !`);
@@ -70,6 +72,7 @@ export default class App {
     this.app.use("/api/auth", authRouter.getRouter());
     this.app.use("/api/events", eventRouter.getRouter());
     this.app.use("/api/transactions", transactionRouter.getRouter());
+    this.app.use("/api/reviews", reviewRouter.getRouter());
   }
 
   public start(): void {

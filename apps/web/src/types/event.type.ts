@@ -1,4 +1,5 @@
 import { User } from "./user.type";
+import { Voucher } from "./voucher.type";
 
 export interface Event {
   id: number;
@@ -6,7 +7,7 @@ export interface Event {
   category: string;
   location: string;
   description: string;
-  book: number;
+  booked: number;
   price: number;
   thumbnail: string;
   userId: number;
@@ -19,18 +20,24 @@ export interface Event {
   updatedAt: Date;
   deletedAt: Date | null;
 
-  user: User;
+  user: User; 
+  Voucher: Voucher[]
 }
 
-export interface IFormCreatedEvent {
+export interface IFormEvent {
   title: string;
   category: string;
   price: string;
   stock: string;
   isFree: boolean;
+  booked: number;
   startEvent: string;
   endEvent: string;
   location: string;
+  voucherCode: string;
+  voucherLimit: string;
+  voucherAmount: string;
+  voucherExpDate: string
   description: string;
   thumbnail: File[];
   userId?: number;

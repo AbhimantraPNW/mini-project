@@ -19,7 +19,7 @@ const updateTransactionStatus = async () => {
 
     console.log("Updated transaction statuses:", transactions.length);
   } catch (error) {
-    console.error("Error updating transaction statuses:", error);
+    console.log("Error updating transaction statuses:", error);
   }
 };
 
@@ -40,7 +40,7 @@ export const updatePaymentProofService = async (
     if (!updatePayment) {
       throw new Error("Transaction not found");
     }
-
+    
     if (file) {
       const updatedTransaction = await prisma.transaction.update({
         where: { id },
@@ -51,8 +51,7 @@ export const updatePaymentProofService = async (
 
       return updatedTransaction;
     }
-
-    return updatePayment;
+    return updatePayment; 
   } catch (error) {
     throw error;
   }

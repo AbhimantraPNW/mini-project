@@ -3,9 +3,9 @@
 import Dropzone from "@/components/Dropzone";
 import PreviewImages from "@/components/PreviewImages";
 import { Card } from "@/components/ui/card";
+import useGetEvent from "@/hooks/api/admin/useGetEvent";
 import useGetTransaction from "@/hooks/api/transaction/useGetTransaction";
 import useUpdatePaymentProof from "@/hooks/api/transaction/useUpdatePaymentProof";
-import { useAppSelector } from "@/redux/hooks";
 import { IFormTransaction } from "@/types/transaction.type";
 import { useFormik } from "formik";
 import { useRouter, useSearchParams } from "next/navigation";
@@ -14,10 +14,10 @@ import { useEffect, useState } from "react";
 
 const PaymentPage = ({ params }: { params: { id: string } }) => {
   const router = useRouter();
+  const { event, isLoading } = useGetEvent(Number(params.id));
   const searchParams = useSearchParams();
   const transactionId = searchParams.get("transactionId");
   const total = searchParams.get("total");
-  const { referralCode } = useAppSelector((state) => state.user);
 
   const { data: transaction } = useGetTransaction(Number(transactionId));
   const { updatePaymentProof } = useUpdatePaymentProof();
@@ -33,6 +33,7 @@ const PaymentPage = ({ params }: { params: { id: string } }) => {
 
   const formattedTotal = total ? formatCurrency(Number(total)) : "N/A";
   const [timeRemaining, setTimeRemaining] = useState(7200);
+  const [timerStarted, setTimerStarted] = useState(false);
 
   const formik = useFormik<IFormTransaction>({
     initialValues: {
@@ -41,7 +42,6 @@ const PaymentPage = ({ params }: { params: { id: string } }) => {
       status: transaction?.status || "",
       transactionId: transaction?.id || 0,
       paymentProof: [],
-      referralCode,
     },
     onSubmit: (values) => {
       if (values.transactionId && values.paymentProof.length > 0) {
@@ -65,14 +65,14 @@ const PaymentPage = ({ params }: { params: { id: string } }) => {
 
   useEffect(() => {
     const reminderJob = scheduleJob(
-      new Date(Date.now() + 2 * 50 * 60 * 1000),
+      new Date(Date.now() + 1 * 50 * 60 * 1000),
       () => {
         alert("Make your payment!");
       },
     );
 
     const declineJob = scheduleJob(
-      new Date(Date.now() + 2 * 60 * 60 * 1000),
+      new Date(Date.now() + 1 * 60 * 60 * 1000),
       () => {
         alert("Payment declined: Time limit exceeded");
         router.push("/");
@@ -90,9 +90,30 @@ const PaymentPage = ({ params }: { params: { id: string } }) => {
     };
   }, []);
 
+  useEffect(() => {
+    if (transaction?.createdAt) {
+      const createdAtTime = new Date(transaction.createdAt).getTime();
+      const currentTime = Date.now();
+      const timeElapsed = (currentTime - createdAtTime) / 1000;
+      const initialTimeRemaining = Math.max(7200 - timeElapsed, 0);
+
+      setTimeRemaining(initialTimeRemaining);
+
+      const interval = setInterval(() => {
+        setTimeRemaining((prevTime) => Math.max(0, prevTime - 0));
+      }, 1000);
+
+      setTimerStarted(true);
+
+      return () => {
+        clearInterval(interval);
+      };
+    }
+  }, [transaction?.createdAt]);
+
   const hours = Math.floor(timeRemaining / 3600);
   const minutes = Math.floor((timeRemaining % 3600) / 60);
-  const seconds = timeRemaining % 60;
+  const seconds = Math.floor(timeRemaining % 60);
 
   return (
     <main
@@ -125,10 +146,10 @@ const PaymentPage = ({ params }: { params: { id: string } }) => {
             isError={Boolean(formik.errors.paymentProof)}
             label=""
             onDrop={(files) =>
-              formik.setFieldValue("paymentProof", [
+            formik.setFieldValue("paymentProof", [
                 ...formik.values.paymentProof,
                 ...files,
-              ])
+            ])
             }
           />
           <p>Upload your payment here</p>

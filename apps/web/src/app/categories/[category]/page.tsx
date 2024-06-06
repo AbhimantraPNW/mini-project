@@ -8,6 +8,7 @@ import { useState } from "react";
 import SkeletonCategoryDetail from "../components/SkeletonCategoryDetail";
 import { CATEGORY_BACKGROUND } from "../../../../constant";
 import { Separator } from "@/components/ui/separator";
+import { appConfig } from "@/utils/config";
 
 const Page = ({ params }: { params: { category: string } }) => {
   const category = params.category;
@@ -18,8 +19,8 @@ const Page = ({ params }: { params: { category: string } }) => {
     meta,
     isLoading,
   } = useGetEvents({
-    page: 1,
-    take: 10,
+    page,
+    take: 9,
     category: category,
   });
 
@@ -39,10 +40,10 @@ const Page = ({ params }: { params: { category: string } }) => {
   )?.url;
 
   return (
-    <main className="">
+    <main>
       {/* Jumbotron */}
       <section
-        className="py-40 md:py-72"
+        className="relative py-40 md:py-72"
         style={{
           backgroundImage: `url('${backgroundImage}')`,
           backgroundSize: "cover",
@@ -50,10 +51,11 @@ const Page = ({ params }: { params: { category: string } }) => {
           backgroundRepeat: "no-repeat",
         }}
       >
-        <div className="bold-40 ml-5 flex flex-col justify-start text-base xl:max-w-[400px]">
+        <div className="absolute inset-0 bg-black opacity-50"></div>
+        <div className="relative z-10 ml-5 flex flex-col justify-start text-base xl:max-w-[400px]">
           <h1 className="text-white">Find your favorite events here</h1>
           <p className="mt-4 font-sans text-2xl font-bold text-white">
-            Alright, here we go! click your favorite event
+            Alright, here we go! Click your favorite event.
           </p>
           <Separator className="mt-5" />
         </div>
@@ -66,29 +68,31 @@ const Page = ({ params }: { params: { category: string } }) => {
 
         <h1 className="mb-4 mt-12 text-2xl font-bold">Event List</h1>
         {/* Event List */}
-        <div className="grid gap-4">
+        <div className="grid gap-6 sm:grid-cols-1 md:grid-cols-3">
           {events.map((event, index) => (
-            // eslint-disable-next-line react/jsx-key
-            <div className="rounded-md border" style={{ maxWidth: "700px" }}>
+            <div
+              key={index}
+              className="rounded-lg border border-gray-400 p-4 shadow-md hover:shadow-lg transition-shadow duration-300 transform hover:-translate-y-1"
+              style={{ maxWidth: "400px" }}
+            >
               <EventList
-                key={index}
+                imageUrl={appConfig.baseUrl + `/assets${event.thumbnail}`}
                 title={event.title}
                 location={event.location}
                 startEvent={event.startEvent}
                 endEvent={event.endEvent}
                 eventId={event.id}
-  
               />
             </div>
           ))}
+        </div>
 
-          <div className="my-8 flex justify-center">
-            <Pagination
-              total={meta?.total || 0}
-              take={meta?.take || 0}
-              onChangePage={handleChangePaginate}
-            />
-          </div>
+        <div className="my-8 flex justify-center">
+          <Pagination
+            total={meta?.total || 0}
+            take={meta?.take || 0}
+            onChangePage={handleChangePaginate}
+          />
         </div>
       </div>
     </main>

@@ -1,34 +1,14 @@
 import prisma from "@/prisma";
-import cron from "node-cron";
 
-interface CreateTransactionBody {
-  amount: number;
+interface UpdateTransactionBody {
   eventId: number;
-  userId: number;
-  total: number;
   transactionId: number;
   status: string;
 }
 
-export const updateTransactionService = async (body: CreateTransactionBody) => {
+export const updateTransactionService = async (body: UpdateTransactionBody) => {
   try {
-    const { eventId, userId, transactionId, status } = body;
-
-    const event = await prisma.event.findFirst({
-      where: { id: eventId },
-    });
-
-    if (!event) {
-      throw new Error("Event not found");
-    }
-
-    const user = await prisma.user.findFirst({
-      where: { id: userId },
-    });
-
-    if (!user) {
-      throw new Error("User not found");
-    }
+    const { eventId, transactionId, status } = body;
 
     const transaction = await prisma.transaction.findFirst({
       where: { id: transactionId },
@@ -45,7 +25,7 @@ export const updateTransactionService = async (body: CreateTransactionBody) => {
         data: { status },
       });
 
-      if (status === "Cancelled") {
+      if (status === "Reject") {
         await prisma.event.update({
           where: { id: eventId },
           data: {
@@ -59,6 +39,20 @@ export const updateTransactionService = async (body: CreateTransactionBody) => {
         });
       }
 
+      // if (status === "Accept") {
+      //   await prisma.event.update({
+      //     where: { id: eventId },
+      //     data: {
+      //       stock: {
+      //         decrement: transaction.amount,
+      //       },
+      //       booked: {
+      //         increment: transaction.amount,
+      //       },
+      //     },
+      //   });
+      // }
+
       return newTransaction;
     });
 
@@ -67,34 +61,3 @@ export const updateTransactionService = async (body: CreateTransactionBody) => {
     throw error;
   }
 };
-
-cron.schedule("*/5 * * * *", async () => {
-  try {
-    const cancelledTransactions = await prisma.transaction.findMany({
-      where: {
-        status: "Cancelled",
-      },
-      include: { user: { include: { points: true } } },
-    });
-
-    for (const transaction of cancelledTransactions) {
-      const { eventId, amount } = transaction;
-
-      await prisma.event.update({
-        where: { id: eventId },
-        data: {
-          stock: {
-            increment: amount,
-          },
-          booked: {
-            decrement: amount,
-          },
-        },
-      });
-    }
-
-    console.log("Cron job executed successfully");
-  } catch (error) {
-    console.error("Error executing cron job:", error);
-  }
-});

@@ -5,7 +5,6 @@ import { scheduleJob } from "node-schedule";
 interface CreateTransactionBody
   extends Omit<Transaction, "createdAt" | "updatedAt" | "id"> {
   userVoucherId: number | null;
-  referralCode: string | null;
 }
 
 export const createTransactionService = async (body: CreateTransactionBody) => {
@@ -18,8 +17,7 @@ export const createTransactionService = async (body: CreateTransactionBody) => {
       total,
       isPointUse,
       isUseVoucher,
-      userVoucherId,
-      referralCode,
+      userVoucherId: initialUserVoucherId,
     } = body;
 
     const user = await prisma.user.findFirst({
@@ -39,46 +37,56 @@ export const createTransactionService = async (body: CreateTransactionBody) => {
       throw new Error("Event not found or insufficient stock available");
     }
 
-    if (referralCode) {
-      const referredUser = await prisma.user.findFirst({
-        where: { referralCode },
-      });
-
-      if (referredUser) {
-        const expiryDate = new Date();
-        expiryDate.setMonth(expiryDate.getMonth() + 3);
-
-        const existingReward = await prisma.reward.findFirst({
-          where: {
-            userId: referredUser.id,
-          },
-        });
-
-        if (!existingReward) {
-          await prisma.reward.create({
-            data: {
-              userId: referredUser.id,
-              rewards: 100,
-              expiredDate: expiryDate,
-            },
-          });
-        }
-      }
-    }
-
-    if (userVoucherId) {
-      await prisma.userVoucher.update({
-        where: { id: userVoucherId },
-        data: { isUse: true },
-      });
-    }
-
     const newTransaction = await prisma.$transaction(async (prisma) => {
       let pointsToDecrement = 0;
       if (isPointUse && user.points) {
         user.points.forEach((point) => {
           pointsToDecrement += point.total || 0;
         });
+      }
+
+      let userVoucherId = initialUserVoucherId;
+
+      if (isUseVoucher && userVoucherId) {
+        const voucher = await prisma.voucher.findFirst({
+          where: { id: userVoucherId },
+        });
+
+        if (!voucher) {
+          throw new Error("Voucher not found");
+        }
+
+        if (voucher.limit === 0) {
+          throw new Error("Voucher limit exceeded");
+        }
+
+        let userVoucher = await prisma.userVoucher.findFirst({
+          where: {
+            userId: Number(userId),
+            voucherId: voucher.id,
+          },
+        });
+
+        if (userVoucher) {
+          throw new Error("You can't use the same voucher twice");
+        }
+
+        if (!userVoucher) {
+          userVoucher = await prisma.userVoucher.create({
+            data: {
+              userId: Number(userId),
+              voucherId: voucher.id,
+              isUse: true,
+            },
+          });
+        }
+
+        await prisma.voucher.update({
+          where: { id: voucher.id },
+          data: { limit: { decrement: 1 } },
+        });
+
+        userVoucherId = userVoucher.id;
       }
 
       const createdTransaction = await prisma.transaction.create({
@@ -157,26 +165,28 @@ export const createTransactionService = async (body: CreateTransactionBody) => {
           });
         }
 
+        if (transaction.isUseVoucher && transaction.userVoucherId) {
+          const userVoucher = await prisma.userVoucher.findFirst({
+            where: { id: transaction.userVoucherId },
+          });
+
+          if (userVoucher && userVoucher.isUse) {
+            await prisma.userVoucher.update({
+              where: { id: userVoucher.id },
+              data: { isUse: false },
+            });
+          }
+
+          await prisma.voucher.update({
+            where: { id: userVoucher?.voucherId },
+            data: { limit: { increment: 1 } },
+          });
+        }
+
         await prisma.transaction.update({
           where: { id: transaction.id },
           data: { status: "Expired" },
         });
-
-        const { referralCode } = body;
-
-        if (referralCode) {
-          const referredUser = await prisma.user.findFirst({
-            where: { referralCode: referralCode },
-          });
-
-          if (referredUser) {
-            await prisma.reward.deleteMany({
-              where: {
-                userId: referredUser.id,
-              },
-            });
-          }
-        }
 
         await prisma.event.update({
           where: { id: transaction.eventId },

@@ -1,7 +1,6 @@
 import { Event } from './event.type';
 import { User } from './user.type';
 
-
 export enum TransactionStatus {
   PENDING = 'PENDING',
   COMPLETE = 'COMPLETE',
@@ -9,7 +8,6 @@ export enum TransactionStatus {
   CANCELLED = 'CANCELLED',
   EXPIRED = 'EXPIRED',
 }
-
 
 export interface Transaction {
     id: number;
@@ -30,11 +28,9 @@ export interface IFormTransaction {
     total: number;
     amount: number;
     status: string;
-    referralCode: string;
     userId?: number;
     eventId?: number
     transactionId?: number;
     paymentProof: File[]
     userVoucherId?: number | null
-
 }

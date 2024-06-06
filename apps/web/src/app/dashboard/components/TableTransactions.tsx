@@ -38,10 +38,10 @@ const TableTransactions: FC<TransactionRowTableProps> = ({
             <TableCell>{amount}</TableCell>
             <TableCell>{status}</TableCell>
 
-            <TableCell><div className='flex gap-2'>
+            {/* <TableCell><div className='flex gap-2'>
                 <CircleXIcon onClick={() => { rejecting(values) }} className='text-mythemes-red cursor-pointer hover:text-mythemes-red/80' />
                 <CircleCheck onClick={() => { accepting(values) }} className='text-green-600 cursor-pointer hover:text-green-600/80' />
-            </div></TableCell>
+            </div></TableCell> */}
         </TableRow>
     )
 }

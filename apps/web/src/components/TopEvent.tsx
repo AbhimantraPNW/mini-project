@@ -63,7 +63,7 @@ const TopEvent: React.FC = () => {
 
   return (
     <>
-      <main className="padding-container max-container mt-20">
+      <main className="padding-container max-container mt-20 mb-10">
         <h1 className="text-2xl font-bold md:mb-0 mb-3">Top Selling Concert Tours</h1>
         <div className="flex w-full flex-col items-center">
           <Carousel>

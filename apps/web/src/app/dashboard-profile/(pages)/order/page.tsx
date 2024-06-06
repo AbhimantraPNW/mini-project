@@ -2,9 +2,34 @@
 
 import AuthGuardUser from "@/hoc/AuthGuard";
 import SidebarProfile from "../../components/SidebarProfile";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import { useAppSelector } from "@/redux/hooks";
+import useGetTransactionUser from "@/hooks/api/transaction/useGetTransactionUser";
+import { useState } from "react";
+import Pagination from "@/components/Pagination";
 
 const Order = () => {
+  const [page, setPage] = useState<number>(1);
+  const { id } = useAppSelector((state) => state.user);
+  const { data, meta } = useGetTransactionUser({
+    userId: id,
+    page,
+    take: 8,
+  });
+
+  const handleChangePaginate = ({ selected }: { selected: number }) => {
+    setPage(selected + 1);
+  };
+
+  const startIndex = (page - 1) * (meta?.take || 0);
+
   return (
     <div className="grid grid-cols-4 bg-slate-300">
       <SidebarProfile />
@@ -19,23 +44,35 @@ const Order = () => {
                 <TableRow>
                   <TableHead className="w-[100px]">No</TableHead>
                   <TableHead>Event</TableHead>
-                  <TableHead>Price</TableHead>
                   <TableHead>Quantity</TableHead>
                   <TableHead>Total</TableHead>
                   <TableHead className="text-right">Status</TableHead>
                 </TableRow>
               </TableHeader>
+
               <TableBody>
-                <TableRow>
-                  <TableCell className="font-medium">1</TableCell>
-                  <TableCell>Vincent Show</TableCell>
-                  <TableCell>200000</TableCell>
-                  <TableCell>5</TableCell>
-                  <TableCell>1000000</TableCell>
-                  <TableCell className="text-right">paid</TableCell>
-                </TableRow>
+                {data.map((transaction, index) => (
+                  <TableRow>
+                    <TableCell className="font-medium">
+                      {startIndex + index + 1}
+                    </TableCell>
+                    <TableCell>{transaction.event.title}</TableCell>
+                    <TableCell>{transaction.amount}</TableCell>
+                    <TableCell>{transaction.total}</TableCell>
+                    <TableCell className="text-right">
+                      {transaction.status}
+                    </TableCell>
+                  </TableRow>
+                ))}
               </TableBody>
             </Table>
+          </div>
+          <div className="mr-16 mt-4 flex justify-end">
+            <Pagination
+              total={meta?.total || 0}
+              take={meta?.take || 0}
+              onChangePage={handleChangePaginate}
+            />
           </div>
         </div>
       </div>

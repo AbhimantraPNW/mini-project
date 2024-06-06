@@ -15,7 +15,6 @@ const useGetEvent = (id: number) => {
       setData(data);
     } catch (error) {
       if (error instanceof AxiosError) {
-        //TODO : replace console.log with toast
         console.log(error);
       }
     } finally {
@@ -25,7 +24,7 @@ const useGetEvent = (id: number) => {
 
   useEffect(() => {
     getEvent();
-  }, []);
+  }, [id]);
 
   return { event: data, isLoading, refetch: getEvent };
 };

@@ -29,10 +29,10 @@ const EventDetail = ({ params }: { params: { id: string } }) => {
   return (
     <main className="mx-auto px-4 py-16" style={{ maxWidth: "800px" }}>
       <section>
-        <div className="mb-4 space-y-1.5">
+        <div className="mb-4 space-y-1.5 max-container">
           <h1 className="mb-7 text-4xl font-bold">{event.title}</h1>
 
-          <div className="relative h-[500px] w-[800px]">
+          <div className="relative h-[300px] w-full md:h-[500px] md:w-[800px]">
             <Image
               fill
               src={`${appConfig.baseUrl}/assets${event.thumbnail}`}

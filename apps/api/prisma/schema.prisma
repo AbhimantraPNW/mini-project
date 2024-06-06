@@ -37,7 +37,7 @@ model User {
   Coupon       Coupon[]
   UserVoucher  UserVoucher[]
   Voucher      Voucher[]
-
+  Review       Review[]
 
   @@map("users")
 }
@@ -63,12 +63,12 @@ model Point {
 
 model Event {
   id          Int           @id @default(autoincrement())
-  title       String        @unique
+  title       String
   price       Int
   location    String
   description String        @db.LongText()
   stock       Int
-  booked      Int?          
+  booked      Int
   isFree      Boolean?
   startEvent  DateTime
   endEvent    DateTime
@@ -80,6 +80,8 @@ model Event {
   createdAt   DateTime      @default(now())
   updatedAt   DateTime      @updatedAt
   Transaction Transaction[]
+  Voucher     Voucher[]
+  Review      Review[]
 
   @@map("events")
 }
@@ -113,12 +115,15 @@ model UserVoucher {
 model Voucher {
   id             Int      @id @default(autoincrement())
   code           String
+  limit          Int
   discountAmount Int
   expirationDate DateTime
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
   userId         Int
+  eventId        Int
 
+  event       Event         @relation(fields: [eventId], references: [id])
   user        User          @relation(fields: [userId], references: [id])
   UserVoucher UserVoucher[]
 
@@ -169,4 +174,18 @@ model Transaction {
   userVoucherId Int?
 
   @@map("transactions")
+}
+
+model Review {
+  id        Int      @id @default(autoincrement())
+  user      User     @relation(fields: [userId], references: [id])
+  event     Event    @relation(fields: [eventId], references: [id])
+  rating    Int
+  comment   String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  userId    Int
+  eventId   Int
+
+  @@map("reviews")
 }

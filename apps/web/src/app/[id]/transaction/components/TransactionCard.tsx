@@ -1,7 +1,8 @@
 import useGetEvent from "@/hooks/api/admin/useGetEvent";
 import useCreateTransaction from "@/hooks/api/transaction/useCreateTransaction";
 import { useAppSelector } from "@/redux/hooks";
-import React, { useEffect, useRef, useState } from "react";
+import { Voucher } from "@/types/voucher.type";
+import React, { useEffect, useState } from "react";
 
 interface TransactionCardProps {
   eventStock: number;
@@ -18,20 +19,26 @@ const TransactionCard: React.FC<TransactionCardProps> = ({
   const { createTransaction } = useCreateTransaction();
   const user = useAppSelector((state) => state.user);
   const { event } = useGetEvent(Number(paramsId));
+
   const [ticketCount, setTicketCount] = useState(1);
   const [usePoints, setUsePoints] = useState(false);
-  const [showsVoucher, setShowsVoucher] = useState(false);
-  const [voucherCode, setVoucherCode] = useState("");
-  const [referralCode, setReferralCode] = useState("");
+  const [selectedVoucherCode, setSelectedVoucherCode] = useState<Voucher | null>(null);
+  const [selectedVoucherDiscount, setSelectedVoucherDiscount] = useState<Voucher | null>(null);
+  const [totalPrice, setTotalPrice] = useState<number>(pricePerTicket);
 
-  const totalPoints =
-    user.points && user.points.length > 0 ? user.points[0].total : 0;
-
-  const totalPrice = usePoints
-    ? pricePerTicket * ticketCount - totalPoints
-    : pricePerTicket * ticketCount;
-
+  const totalPoints = user.points && user.points.length > 0 ? user.points[0].total : 0;
   const totalPriceTicket = pricePerTicket * ticketCount;
+
+  useEffect(() => {
+    const totalPriceTicket = pricePerTicket * ticketCount;
+    const discountPercentage = selectedVoucherDiscount ? selectedVoucherDiscount.discountAmount / 100 : 0;
+    const totalPriceWithDiscount = totalPriceTicket * (1 - discountPercentage);
+    const discountAmount = selectedVoucherCode ? 20000 : 0;
+    const finalPrice = totalPriceWithDiscount - (usePoints ? totalPoints : 0) - discountAmount;
+    setTotalPrice(Math.max(finalPrice, 0));
+  }, [usePoints, ticketCount, selectedVoucherCode, selectedVoucherDiscount]);
+
+  const discountAmount = selectedVoucherCode ? 20000 : 0;
 
   const formatCurrency = (value: number) => {
     return new Intl.NumberFormat("id-ID", {
@@ -50,33 +57,12 @@ const TransactionCard: React.FC<TransactionCardProps> = ({
     setTicketCount(ticketCount - 1);
   };
 
-  const toggleVoucherDropdown = () => {
-    setShowsVoucher(!showsVoucher);
+  const handleSelectedVoucherCode = (voucher: Voucher) => {
+    setSelectedVoucherCode(voucher);
   };
 
-  const useOutsideClick = (ref: React.RefObject<any>, callback: () => void) => {
-    useEffect(() => {
-      const handleClickOutside = (event: MouseEvent) => {
-        if (ref.current && !ref.current.contains(event.target)) {
-          callback();
-        }
-      };
-
-      document.addEventListener("mousedown", handleClickOutside);
-      return () => {
-        document.removeEventListener("mousedown", handleClickOutside);
-      };
-    }, [ref, callback]);
-  };
-
-  const voucherInputRef = useRef<HTMLInputElement>(null);
-
-  useOutsideClick(voucherInputRef, () => {
-    setShowsVoucher(false);
-  });
-
-  const handleReferralCodeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setReferralCode(e.target.value);
+  const handleSelectedVoucherDiscount = (voucher: Voucher) => {
+    setSelectedVoucherDiscount(voucher);
   };
 
   const handleCheckout = async () => {
@@ -88,10 +74,9 @@ const TransactionCard: React.FC<TransactionCardProps> = ({
         amount: ticketCount,
         status: "Pending",
         paymentProof: [] as File[],
-        userVoucherId: voucherCode ? Number(voucherCode) : null,
         isPointUse: usePoints,
-        isUseVoucher: !!voucherCode,
-        referralCode
+        isUseVoucher: selectedVoucherCode || selectedVoucherDiscount ? true : false,
+        userVoucherId: selectedVoucherCode ? selectedVoucherCode?.id : null,
       };
 
       await createTransaction(payload);
@@ -112,13 +97,14 @@ const TransactionCard: React.FC<TransactionCardProps> = ({
           <p>Price :</p>
           <span>{formatCurrency(pricePerTicket)}</span>
         </div>
+
         <div className="ticket-control">
           <button
-            className="control-button"
-            onClick={handleRemoveTicket}
-            disabled={ticketCount === 1}
+            className="control-button add-button"
+            onClick={handleAddTicket}
+            disabled={ticketCount === eventStock}
           >
-            -
+            +
           </button>
           <input
             type="number"
@@ -131,13 +117,14 @@ const TransactionCard: React.FC<TransactionCardProps> = ({
             }
           />
           <button
-            className="control-button"
-            onClick={handleAddTicket}
-            disabled={ticketCount === eventStock}
+            className="control-button remove-button"
+            onClick={handleRemoveTicket}
+            disabled={ticketCount === 1}
           >
-            +
+            -
           </button>
         </div>
+
         <div className="subtotal-info">
           <span>Subtotal:</span>
           <span>{formatCurrency(totalPriceTicket)}</span>
@@ -161,32 +148,52 @@ const TransactionCard: React.FC<TransactionCardProps> = ({
             />
             Use Points
           </label>
-          {/* Voucher badge */}
-          <div
-            className="mt-2 cursor-pointer rounded-lg bg-gray-200 px-2 py-2 hover:bg-gray-300"
-            onClick={toggleVoucherDropdown}
-          >
-            <span>Voucher</span>
-            {showsVoucher && (
-              <div className="absolute mt-2 rounded border bg-white p-2 shadow-lg hover:bg-gray-50">
-                <input
-                  ref={voucherInputRef}
-                  type="text"
-                  value={referralCode}
-                  onChange={handleReferralCodeChange}
-                  onClick={(e) => e.stopPropagation()}
-                  onKeyDown={(e) => {
-                    if (e.key === "Enter") {
-                      setShowsVoucher(false);
-                    }
-                  }}
-                  placeholder="Enter voucher code"
-                  className="w-full rounded border p-1"
-                />
-              </div>
-            )}
-          </div>
         </div>
+
+        {/* Voucher Badge */}
+        {event?.Voucher && event?.Voucher?.length > 0 && (
+          <div className="mt-5 border border-black p-2">
+            <h1 className="font-bold">Click voucher to get discount!</h1>
+            {event?.Voucher.map((voucher) => (
+              <div key={voucher.id} className="mt-5">
+                <p>Voucher Limit : {voucher.limit}</p>
+                <div
+                  className="flex cursor-pointer flex-row items-center gap-2 rounded-lg"
+                  onClick={() => handleSelectedVoucherCode(voucher)}
+                >
+                  <label className="mt-2 cursor-pointer rounded-lg bg-green-200 px-4 py-2 hover:bg-green-300">
+                    {voucher.code}
+                  </label>
+                </div>
+                <div
+                  className="mt-2 flex flex-wrap gap-2"
+                  onClick={() => handleSelectedVoucherDiscount(voucher)}
+                >
+                  <label className="mt-2 cursor-pointer rounded-lg bg-blue-300 px-4 py-2 hover:bg-blue-400">
+                    Get Discount ({voucher.discountAmount}%)
+                  </label>
+                </div>
+                <div className="mt-4"></div>
+              </div>
+            ))}
+          </div>
+        )}
+
+        {(selectedVoucherCode || selectedVoucherDiscount) && (
+          <div className="flex flex-col md:text-right">
+            {selectedVoucherCode && <p>{formatCurrency(discountAmount)}</p>}
+            {selectedVoucherDiscount && (
+              <p>
+                {formatCurrency(
+                  totalPriceTicket *
+                    (selectedVoucherDiscount.discountAmount / 100),
+                )}
+              </p>
+            )}
+            <p>-</p>
+          </div>
+        )}
+
         <div className="total-info">
           <span>Total:</span>
           <span>{formatCurrency(totalPrice)}</span>

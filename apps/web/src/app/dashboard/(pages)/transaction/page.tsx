@@ -1,42 +1,55 @@
 "use client";
 
-import { notFound, useRouter } from "next/navigation";
-import Sidebar from "../../components/Sidebar";
-import { Button } from "@/components/ui/button";
+import Pagination from "@/components/Pagination";
 import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { useAppDispatch, useAppSelector } from "@/redux/hooks";
-import { logoutAction } from "@/redux/slices/userSlice";
-import { LogOut } from "lucide-react";
-import useGetTransactionsByOrganizer from "@/hooks/api/tx/useTransactions";
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 import AuthGuardOrganizer from "@/hoc/AuthGuardOrganizer";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import useAcceptTransaction from "@/hooks/api/tx/useAcceptTransactions";
+import useRejectTransaction from "@/hooks/api/tx/useRejectionTransactions";
+import { useRouter } from "next/navigation";
+import { useState } from "react";
+import Sidebar from "../../components/Sidebar";
+// import {
+//   AlertDialog,
+//   AlertDialogAction,
+//   AlertDialogCancel,
+//   AlertDialogContent,
+//   AlertDialogDescription,
+//   AlertDialogFooter,
+//   AlertDialogHeader,
+//   AlertDialogTitle,
+//   AlertDialogTrigger,
+// } from "@/components/ui/alert-dialog";
+import useGetTransactionsByOrganizer from "@/hooks/api/tx/useGetTransactionByOrganizer";
 
 const Transactions = () => {
   const router = useRouter();
-  const dispatch = useAppDispatch();
+  const [page, setPage] = useState<number>(1);
+  const { accepting } = useAcceptTransaction();
+  const { rejecting } = useRejectTransaction();
+  const { data, meta } = useGetTransactionsByOrganizer({
+    page,
+    take: 8,
+  });
 
-  const { id, email, referralCode, role, points } = useAppSelector(
-    (state) => state.user,
-  );
-
-  // const { data: transactions } = useGetTransactionsByOrganizer();
-
-  // if(!id) {
-  //   return notFound()
-  // }
-  const logout = () => {
-    localStorage.removeItem("token");
-    dispatch(logoutAction());
-    router.push("/");
+  const handleChangePaginate = ({ selected }: { selected: number }) => {
+    setPage(selected + 1);
   };
+
+  const handleAccept = (transactionId: number, eventId: number) => {
+    accepting({ id: transactionId, status: "Accept", eventId });
+  };
+
+  const handleReject = (transactionId: number, eventId: number) => {
+    rejecting({ id: transactionId, status: "Reject", eventId });
+  };
+
   return (
     <div className="mb-14 grid h-screen grid-cols-4">
       <Sidebar />
@@ -44,29 +57,59 @@ const Transactions = () => {
         <div className="mr-5 mt-5 flex h-20 w-auto items-center justify-between rounded-2xl bg-slate-300 pl-5 text-red-600">
           <div className="text-4xl font-bold">Transactions</div>
         </div>
-        <div className="flex ml-4 mr-10 mt-7 justify-center">
-        <Table>
-              <TableHeader>
+        <div className="ml-4 mr-10 mt-7 flex justify-center">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead className="w-[100px]">No</TableHead>
+                <TableHead>Event</TableHead>
+                {/* <TableHead>Price</TableHead> */}
+                <TableHead>Quantity</TableHead>
+                <TableHead>Total</TableHead>
+                <TableHead>Status</TableHead>
+              </TableRow>
+            </TableHeader>
+
+            <TableBody>
+              {data.map((transaction, index) => (
                 <TableRow>
-                  <TableHead className="w-[100px]">No</TableHead>
-                  <TableHead>Event</TableHead>
-                  <TableHead>Price</TableHead>
-                  <TableHead>Quantity</TableHead>
-                  <TableHead>Total</TableHead>
-                  <TableHead className="text-right">Status</TableHead>
+                  <TableCell className="font-medium">
+                    {transaction.id}
+                  </TableCell>
+                  <TableCell>{transaction.event.title}</TableCell>
+                  {/* <TableCell>200000</TableCell> */}
+                  <TableCell>{transaction.amount}</TableCell>
+                  <TableCell>{transaction.total}</TableCell>
+                  <TableCell>{transaction.status}</TableCell>
+                  <TableCell className="text-right">
+                    <button
+                      className="mr-2 rounded bg-green-500 px-4 py-2 text-white"
+                      onClick={() =>
+                        handleAccept(transaction.id, transaction.eventId)
+                      }
+                    >
+                      Accept
+                    </button>
+                    <button
+                      className="mr-2 rounded bg-red-500 px-4 py-2 text-white"
+                      onClick={() =>
+                        handleReject(transaction.id, transaction.eventId)
+                      }
+                    >
+                      Reject
+                    </button>
+                  </TableCell>
                 </TableRow>
-              </TableHeader>
-              <TableBody>
-                <TableRow>
-                  <TableCell className="font-medium">1</TableCell>
-                  <TableCell>Vincent Show</TableCell>
-                  <TableCell>200000</TableCell>
-                  <TableCell>5</TableCell>
-                  <TableCell>1000000</TableCell>
-                  <TableCell className="text-right">paid</TableCell>
-                </TableRow>
-              </TableBody>
-            </Table>
+              ))}
+            </TableBody>
+          </Table>
+        </div>
+        <div className="mt-4 flex justify-end">
+          <Pagination
+            total={meta?.total || 0}
+            take={meta?.take || 0}
+            onChangePage={handleChangePaginate}
+          />
         </div>
       </div>
     </div>

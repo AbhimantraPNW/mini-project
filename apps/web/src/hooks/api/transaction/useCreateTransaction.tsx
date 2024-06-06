@@ -1,5 +1,6 @@
 "use client";
 
+import { useToast } from "@/components/ui/use-toast";
 import { axiosInstance } from "@/lib/axios";
 import { IFormTransaction, Transaction } from "@/types/transaction.type";
 import { AxiosError } from "axios";
@@ -8,6 +9,7 @@ import { useState } from "react";
 
 const useCreateTransaction = () => {
   const router = useRouter();
+  const { toast } = useToast();
   const [loading, setLoading] = useState(true);
 
   const createTransaction = async (payload: IFormTransaction) => {
@@ -22,7 +24,11 @@ const useCreateTransaction = () => {
       );
     } catch (error) {
       if (error instanceof AxiosError) {
-        console.log(error.response?.data);
+        toast({
+          title: "Error",
+          description: error.response?.data,
+          duration: 5000,
+        });
       }
     } finally {
       setLoading(false);

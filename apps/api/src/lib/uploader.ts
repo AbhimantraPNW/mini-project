@@ -50,7 +50,7 @@ export const uploader = (
     }
   };
 
-  const limits = { fileSize: filelimit || 10 * 1024 * 1024 }; // default 2mb
+  const limits = { fileSize: filelimit || 10 * 1024 * 1024 }; // default 10mb
 
   return multer({ storage, fileFilter, limits });
 };

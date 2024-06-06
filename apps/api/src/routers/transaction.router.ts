@@ -19,8 +19,12 @@ export class TransactionRouter {
       verifyToken,
       this.TransactionController.createTransactionController,
     );
+    this.router.get(
+      "/:id",
+      this.TransactionController.getTransactionController,
+    );
     this.router.patch(
-      "/",
+      "/:id/update",
       verifyToken,
       this.TransactionController.updateTransactionController,
     );
@@ -31,8 +35,12 @@ export class TransactionRouter {
       this.TransactionController.updatePaymentProofController,
     );
     this.router.get(
-      "/:id",
-      this.TransactionController.getTransactionController,
+      "/dashboard/transaction",
+      this.TransactionController.getTransactionByOrganizerController,
+    );
+    this.router.get(
+      "/dashboard-profile/order",
+      this.TransactionController.getTransactionClientController,
     );
   }
 

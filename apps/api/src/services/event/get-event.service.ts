@@ -1,10 +1,10 @@
 import prisma from "@/prisma";
 
-export const getBlogService = async (id: number) => {
+export const getEventService = async (id: number) => {
   try {
     const event = await prisma.event.findFirst({
       where: { id },
-      include: { user: true },
+      include: { user: true, Voucher: true },
     });
 
     if (!event) {

@@ -8,7 +8,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import useCreateEvent from "@/hooks/api/admin/useCreateEvent";
 import { useAppSelector } from "@/redux/hooks";
-import { IFormCreatedEvent } from "@/types/event.type";
+import { IFormEvent } from "@/types/event.type";
 import { useFormik } from "formik";
 import { useState } from "react";
 import { EVENT_CATEGORIES } from "../../../constant";
@@ -43,7 +43,7 @@ const CreateEvent = () => {
     handleBlur,
     handleSubmit,
     setFieldValue,
-  } = useFormik<IFormCreatedEvent>({
+  } = useFormik<IFormEvent>({
     initialValues: {
       category: "",
       title: "",
@@ -52,8 +52,13 @@ const CreateEvent = () => {
       endEvent: "",
       location: "",
       description: "",
+      booked: 0,
       thumbnail: [],
       stock: "",
+      voucherCode: "",
+      voucherLimit: "",
+      voucherAmount: "",
+      voucherExpDate: "",
       isFree: false,
     },
     validationSchema,
@@ -174,6 +179,50 @@ const CreateEvent = () => {
                 onBlur={handleBlur}
                 error={errors.stock}
                 isError={!!touched.stock && !!errors.stock}
+              />
+              <FormInput
+                name="voucherCode"
+                type="text"
+                label="Voucher Code"
+                placeholder="Voucher Code"
+                value={values.voucherCode || ""}
+                onChange={handleChange}
+                onBlur={handleBlur}
+                error={errors.voucherCode}
+                isError={!!touched.voucherCode && !!errors.voucherCode}
+              />{" "}
+              <FormInput
+                name="voucherLimit"
+                type="number"
+                label="Voucher Limit"
+                placeholder="Voucher Limit"
+                value={values.voucherLimit || ""}
+                onChange={handleChange}
+                onBlur={handleBlur}
+                error={errors.voucherLimit}
+                isError={!!touched.voucherLimit && !!errors.voucherLimit}
+              />
+              <FormInput
+                name="voucherAmount"
+                type="number"
+                label="Voucher Amount"
+                placeholder="Voucher Amount"
+                value={values.voucherAmount || ""}
+                onChange={handleChange}
+                onBlur={handleBlur}
+                error={errors.voucherAmount}
+                isError={!!touched.voucherAmount && !!errors.voucherAmount}
+              />{" "}
+              <FormInput
+                name="voucherExpDate"
+                type="date"
+                label="Voucher Expiry Date"
+                placeholder="Voucher Expiry Date"
+                value={values.voucherExpDate || ""}
+                onChange={handleChange}
+                onBlur={handleBlur}
+                error={errors.voucherExpDate}
+                isError={!!touched.voucherExpDate && !!errors.voucherExpDate}
               />
             </div>
             <div className="mt-6 grid grid-cols-1 gap-6">
